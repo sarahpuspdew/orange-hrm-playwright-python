@@ -1,0 +1,40 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:   # lets you run it manually from the Actions tab
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Build test image
+        run: docker compose build tests
+
+      - name: Run tests
+        run: docker compose run --rm tests
+
+      # runs even if the tests failed
+      - name: Generate Allure report (single HTML file)
+        if: always()
+        run: npx --yes allure-commandline@2 generate allure-results --clean --single-file -o allure-report
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: allure-report
+          path: allure-report/index.html
+          if-no-files-found: warn
+          retention-days: 14

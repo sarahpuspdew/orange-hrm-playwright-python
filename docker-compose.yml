@@ -1,0 +1,26 @@
+services:
+  tests:
+    build:
+      context: .
+      args:
+        PLAYWRIGHT_VERSION: "1.63.0"
+    image: orange-hrm-tests:latest
+    init: true        # clean up zombie browser processes
+    ipc: host         # avoids Chromium crashes in containers
+    environment:
+      BASE_URL: ${BASE_URL:-https://opensource-demo.orangehrmlive.com}
+    volumes:
+      - .:/app        # code changes apply without rebuilding; reports land in this folder
+
+  # Live Allure report:  docker compose --profile report up -d allure
+  # Open: http://localhost:5050/allure-docker-service/latest-report
+  allure:
+    image: frankescobar/allure-docker-service
+    profiles: ["report"]
+    environment:
+      CHECK_RESULTS_EVERY_SECONDS: 3
+    ports:
+      - "5050:5050"
+    volumes:
+      - ./allure-results:/app/allure-results
+      - ./allure-reports:/app/default-reports
